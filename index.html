@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Mini Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; overflow: hidden; touch-action: none; }
     canvas { display: block; background: lightblue; }
@@ -59,8 +59,8 @@ let gravity = 1;
 let ground = canvas.height - 80;
 let boxesHit = 0;
 let gameOver = false;
-
 let cameraOffsetX = 0;
+
 function updateCamera() {
   cameraOffsetX = player.x - canvas.width / 2 + player.width / 2;
   if (cameraOffsetX < 0) cameraOffsetX = 0;
@@ -72,12 +72,8 @@ const player = {
     this.velocityY += gravity;
     this.y += this.velocityY;
     for (const p of platforms) {
-      if (
-        this.x + this.width > p.x &&
-        this.x < p.x + p.width &&
-        this.y + this.height >= p.y &&
-        this.y + this.height <= p.y + this.velocityY + 5
-      ) {
+      if (this.x + this.width > p.x && this.x < p.x + p.width &&
+          this.y + this.height >= p.y && this.y + this.height <= p.y + this.velocityY + 5) {
         this.y = p.y - this.height;
         this.velocityY = 0;
         this.jumping = false;
@@ -95,8 +91,6 @@ const player = {
   }
 };
 
-let colors = ["yellow", "green", "orange", "pink"];
-let values = [2, 4, 6, 8];
 let boxOrder = [2, 4, 6, 8];
 let currentBoxIndex = 0;
 
@@ -109,11 +103,11 @@ function shuffle(arr) {
 }
 
 function generateBoxes() {
-  const shuffledColors = shuffle([...colors]);
+  const colors = shuffle(["yellow", "green", "orange", "pink"]);
   return boxOrder.map((val, i) => ({
     x: 200 + i * 300,
     y: ground - 150 - Math.random() * 100,
-    color: shuffledColors[i],
+    color: colors[i],
     value: val,
     active: true
   }));
@@ -123,10 +117,12 @@ let boxes = generateBoxes();
 function generatePlatforms() {
   const platforms = [];
   for (let i = 0; i < 9; i++) {
+    let y = i < 3
+      ? ground - 50 - Math.random() * 40
+      : ground - 100 - Math.random() * 250;
     platforms.push({
       x: 100 + Math.random() * 1200,
-      y: ground - 100 - Math.random() * 250,
-      width: 60, height: 10
+      y, width: 60, height: 10
     });
   }
   return platforms;
@@ -229,9 +225,7 @@ function updatePoppingNumbers() {
     pop.y -= 1;
     pop.alpha -= 0.02;
   }
-  for (let i = poppingNumbers.length - 1; i >= 0; i--) {
-    if (poppingNumbers[i].alpha <= 0) poppingNumbers.splice(i, 1);
-  }
+  poppingNumbers = poppingNumbers.filter(p => p.alpha > 0);
 }
 function drawPoppingNumbers() {
   ctx.font = "20px Arial";
