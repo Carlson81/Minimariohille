@@ -54,148 +54,148 @@
     window.addEventListener('resize', resizeCanvas);
 
     let gravity = 1;
-    let ground = canvas.height - 80;
+let ground = canvas.height - 80;
 
-    const player = {
-      x: 100,
-      y: ground,
-      width: 40,
-      height: 50,
-      velocityY: 0,
-      jumping: false,
-      draw() {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-      },
-      update() {
-        this.velocityY += gravity;
-        this.y += this.velocityY;
+const player = {
+  x: 100,
+  y: ground,
+  width: 40,
+  height: 50,
+  velocityY: 0,
+  jumping: false,
+  draw() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  },
+  update() {
+    this.velocityY += gravity;
+    this.y += this.velocityY;
 
-        let onPlatform = false;
-        for (const p of platforms) {
-          if (
-            this.x + this.width > p.x &&
-            this.x < p.x + p.width &&
-            this.y + this.height >= p.y &&
-            this.y + this.height <= p.y + this.velocityY + 5
-          ) {
-            this.y = p.y - this.height;
-            this.velocityY = 0;
-            this.jumping = false;
-            onPlatform = true;
-          }
-        }
-
-        if (this.y >= ground) {
-          this.y = ground;
-          this.velocityY = 0;
-          this.jumping = false;
-        }
-      }
-    };
-
-    const platforms = [
-      { x: 100, y: ground - 100, width: 80, height: 10 },
-      { x: 200, y: ground - 150, width: 80, height: 10 },
-      { x: 300, y: ground - 200, width: 80, height: 10 },
-      { x: 400, y: ground - 250, width: 80, height: 10 },
-    ];
-
-    const boxes = [
-      { x: 130, y: ground - 200, color: 'yellow', value: 2, active: true },
-      { x: 230, y: ground - 250, color: 'green', value: 4, active: true },
-      { x: 330, y: ground - 300, color: 'orange', value: 6, active: true },
-      { x: 430, y: ground - 350, color: 'pink', value: 8, active: true }
-    ];
-
-    const poppingNumbers = [];
-    const keys = { left: false, right: false, jump: false };
-
-    document.getElementById('left').ontouchstart = () => keys.left = true;
-    document.getElementById('left').ontouchend = () => keys.left = false;
-    document.getElementById('right').ontouchstart = () => keys.right = true;
-    document.getElementById('right').ontouchend = () => keys.right = false;
-    document.getElementById('jump').ontouchstart = () => {
-      if (!player.jumping) {
-        player.velocityY = -18;
-        player.jumping = true;
-      }
-    };
-
-    function drawPlatforms() {
-      for (const p of platforms) {
-        ctx.fillStyle = 'yellow';
-        ctx.fillRect(p.x, p.y, p.width, p.height);
+    let onPlatform = false;
+    for (const p of platforms) {
+      if (
+        this.x + this.width > p.x &&
+        this.x < p.x + p.width &&
+        this.y + this.height >= p.y &&
+        this.y + this.height <= p.y + this.velocityY + 5
+      ) {
+        this.y = p.y - this.height;
+        this.velocityY = 0;
+        this.jumping = false;
+        onPlatform = true;
       }
     }
 
-    function drawBoxes() {
-      for (const box of boxes) {
-        if (box.active) {
-          ctx.fillStyle = box.color;
-          ctx.fillRect(box.x, box.y, 40, 40);
-        }
-      }
+    if (this.y >= ground) {
+      this.y = ground;
+      this.velocityY = 0;
+      this.jumping = false;
     }
+  }
+};
 
-    function checkBoxCollisions() {
-      for (const box of boxes) {
-        if (
-          box.active &&
-          player.x < box.x + 40 &&
-          player.x + player.width > box.x &&
-          player.y < box.y + 40 &&
-          player.y + player.height > box.y &&
-          player.velocityY < 0
-        ) {
-          box.active = false;
-          poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
-        }
-      }
+const platforms = [
+  { x: 80, y: ground - 100, width: 60, height: 10 },
+  { x: 160, y: ground - 150, width: 60, height: 10 },
+  { x: 240, y: ground - 200, width: 60, height: 10 },
+  { x: 320, y: ground - 250, width: 60, height: 10 },
+];
+
+const boxes = [
+  { x: 100, y: ground - 200, color: 'yellow', value: 2, active: true },
+  { x: 180, y: ground - 250, color: 'green', value: 4, active: true },
+  { x: 260, y: ground - 300, color: 'orange', value: 6, active: true },
+  { x: 340, y: ground - 350, color: 'pink', value: 8, active: true }
+];
+
+const poppingNumbers = [];
+const keys = { left: false, right: false, jump: false };
+
+document.getElementById('left').ontouchstart = () => keys.left = true;
+document.getElementById('left').ontouchend = () => keys.left = false;
+document.getElementById('right').ontouchstart = () => keys.right = true;
+document.getElementById('right').ontouchend = () => keys.right = false;
+document.getElementById('jump').ontouchstart = () => {
+  if (!player.jumping) {
+    player.velocityY = -18;
+    player.jumping = true;
+  }
+};
+
+function drawPlatforms() {
+  for (const p of platforms) {
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(p.x, p.y, p.width, p.height);
+  }
+}
+
+function drawBoxes() {
+  for (const box of boxes) {
+    if (box.active) {
+      ctx.fillStyle = box.color;
+      ctx.fillRect(box.x, box.y, 40, 40);
     }
+  }
+}
 
-    function updatePoppingNumbers() {
-      for (const pop of poppingNumbers) {
-        pop.y -= 1;
-        pop.alpha -= 0.02;
-      }
-      for (let i = poppingNumbers.length - 1; i >= 0; i--) {
-        if (poppingNumbers[i].alpha <= 0) {
-          poppingNumbers.splice(i, 1);
-        }
-      }
+function checkBoxCollisions() {
+  for (const box of boxes) {
+    if (
+      box.active &&
+      player.x < box.x + 40 &&
+      player.x + player.width > box.x &&
+      player.y < box.y + 40 &&
+      player.y + player.height > box.y &&
+      player.velocityY < 0
+    ) {
+      box.active = false;
+      poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
     }
+  }
+}
 
-    function drawPoppingNumbers() {
-      ctx.font = '20px Arial';
-      for (const pop of poppingNumbers) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${pop.alpha})`;
-        ctx.fillText(pop.value, pop.x, pop.y);
-      }
+function updatePoppingNumbers() {
+  for (const pop of poppingNumbers) {
+    pop.y -= 1;
+    pop.alpha -= 0.02;
+  }
+  for (let i = poppingNumbers.length - 1; i >= 0; i--) {
+    if (poppingNumbers[i].alpha <= 0) {
+      poppingNumbers.splice(i, 1);
     }
+  }
+}
 
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawPoppingNumbers() {
+  ctx.font = '20px Arial';
+  for (const pop of poppingNumbers) {
+    ctx.fillStyle = `rgba(0, 0, 0, ${pop.alpha})`;
+    ctx.fillText(pop.value, pop.x, pop.y);
+  }
+}
 
-      ctx.fillStyle = 'green';
-      ctx.fillRect(0, ground + player.height, canvas.width, canvas.height - ground);
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      drawPlatforms();
-      drawBoxes();
-      drawPoppingNumbers();
+  ctx.fillStyle = 'green';
+  ctx.fillRect(0, ground + player.height, canvas.width, canvas.height - ground);
 
-      if (keys.right) player.x += 5;
-      if (keys.left) player.x -= 5;
+  drawPlatforms();
+  drawBoxes();
+  drawPoppingNumbers();
 
-      player.update();
-      checkBoxCollisions();
-      updatePoppingNumbers();
-      player.draw();
+  if (keys.right) player.x += 5;
+  if (keys.left) player.x -= 5;
 
-      requestAnimationFrame(gameLoop);
-    }
+  player.update();
+  checkBoxCollisions();
+  updatePoppingNumbers();
+  player.draw();
 
-    gameLoop();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
   </script>
 </body>
 </html>
