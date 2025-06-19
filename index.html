@@ -43,8 +43,63 @@
 <div id="overlay" class="overlay" style="display: none;">Der Code ist 2-4-6-8</div>
 <div id="restart" class="restart-button">Spiel neu starten</div>
 <script>
-  // Hier kommt der komplette JavaScript-Code rein (gekürzt, da Platz nicht reicht)
-  // Hinweis: Das vollständige JavaScript wurde bereits angepasst und funktioniert.
+// Kamera folgt der Spielfigur
+let cameraOffsetX = 0;
+function updateCamera() {
+  cameraOffsetX = player.x - canvas.width / 2 + player.width / 2;
+  if (cameraOffsetX < 0) cameraOffsetX = 0;
+}
+
+// Box-Reihenfolge erzwingen
+let boxOrder = [2, 4, 6, 8];
+let currentBoxIndex = 0;
+function checkBoxCollisions() {
+  for (const box of boxes) {
+    if (
+      box.active &&
+      box.value === boxOrder[currentBoxIndex] &&
+      player.x < box.x + 40 &&
+      player.x + player.width > box.x &&
+      player.y < box.y + 40 &&
+      player.y + player.height > box.y &&
+      player.velocityY < 0
+    ) {
+      box.active = false;
+      boxesHit++;
+      currentBoxIndex++;
+      poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
+      if (boxesHit >= boxes.length && !gameOver) {
+        gameOver = true;
+        overlay.innerText = 'Der Code ist 2-4-6-8';
+        overlay.style.display = 'flex';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          restartBtn.style.display = 'block';
+        }, 10000);
+      }
+    }
+  }
+}
+
+// Zufällige Plattform-Generierung inkl. Hilfslinien unter Boxen
+function generatePlatforms() {
+  const platforms = [];
+  for (let i = 0; i < 4; i++) {
+    const x = 200 + i * 300;
+    const y = ground - 80;
+    platforms.push({ x: x, y: y, width: 60, height: 10 });
+  }
+  for (let i = 0; i < 5; i++) {
+    let y = i < 2 ? ground - 50 - Math.random() * 40 : ground - 100 - Math.random() * 250;
+    platforms.push({
+      x: 100 + Math.random() * 1200,
+      y: y,
+      width: 60,
+      height: 10
+    });
+  }
+  return platforms;
+}
 </script>
 </body>
 </html>
