@@ -2,9 +2,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Mini Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; overflow: hidden; touch-action: none; }
     canvas { display: block; background: lightblue; }
@@ -43,45 +43,78 @@
 <div id="overlay" class="overlay" style="display: none;">Der Code ist 2-4-6-8</div>
 <div id="restart" class="restart-button">Spiel neu starten</div>
 <script>
-// Kamera folgt der Spielfigur
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+let gravity = 1;
+let ground = canvas.height - 80;
+let boxesHit = 0;
+let gameOver = false;
 let cameraOffsetX = 0;
+
 function updateCamera() {
   cameraOffsetX = player.x - canvas.width / 2 + player.width / 2;
   if (cameraOffsetX < 0) cameraOffsetX = 0;
 }
 
-// Box-Reihenfolge erzwingen
-let boxOrder = [2, 4, 6, 8];
-let currentBoxIndex = 0;
-function checkBoxCollisions() {
-  for (const box of boxes) {
-    if (
-      box.active &&
-      box.value === boxOrder[currentBoxIndex] &&
-      player.x < box.x + 40 &&
-      player.x + player.width > box.x &&
-      player.y < box.y + 40 &&
-      player.y + player.height > box.y &&
-      player.velocityY < 0
-    ) {
-      box.active = false;
-      boxesHit++;
-      currentBoxIndex++;
-      poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
-      if (boxesHit >= boxes.length && !gameOver) {
-        gameOver = true;
-        overlay.innerText = 'Der Code ist 2-4-6-8';
-        overlay.style.display = 'flex';
-        setTimeout(() => {
-          overlay.style.display = 'none';
-          restartBtn.style.display = 'block';
-        }, 10000);
+const player = {
+  x: 100, y: ground, width: 40, height: 50, velocityY: 0, jumping: false,
+  update() {
+    this.velocityY += gravity;
+    this.y += this.velocityY;
+    for (const p of platforms) {
+      if (this.x + this.width > p.x && this.x < p.x + p.width &&
+          this.y + this.height >= p.y && this.y + this.height <= p.y + this.velocityY + 5) {
+        this.y = p.y - this.height;
+        this.velocityY = 0;
+        this.jumping = false;
       }
     }
+    if (this.y >= ground) {
+      this.y = ground;
+      this.velocityY = 0;
+      this.jumping = false;
+    }
+  },
+  draw() {
+    ctx.fillStyle = "blue";
+    ctx.fillRect(this.x - cameraOffsetX, this.y, this.width, this.height);
   }
+};
+
+const overlay = document.getElementById("overlay");
+const restartBtn = document.getElementById("restart");
+
+const boxOrder = [2, 4, 6, 8];
+let currentBoxIndex = 0;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
-// Zufällige Plattform-Generierung inkl. Hilfslinien unter Boxen
+function generateBoxes() {
+  const colors = shuffle(["yellow", "green", "orange", "pink"]);
+  return boxOrder.map((val, i) => ({
+    x: 200 + i * 300,
+    y: ground - 150 - Math.random() * 100,
+    color: colors[i],
+    value: val,
+    active: true
+  }));
+}
+let boxes = generateBoxes();
+
 function generatePlatforms() {
   const platforms = [];
   for (let i = 0; i < 4; i++) {
@@ -100,6 +133,152 @@ function generatePlatforms() {
   }
   return platforms;
 }
+let platforms = generatePlatforms();
+
+let enemies = [
+  { x: canvas.width + 100, y: ground, radius: 20, speed: 2 },
+  { x: canvas.width + 300, y: ground - 150, radius: 20, speed: 2.5 }
+];
+
+let poppingNumbers = [];
+let keys = { left: false, right: false };
+
+document.getElementById("left").ontouchstart = () => keys.left = true;
+document.getElementById("left").ontouchend = () => keys.left = false;
+document.getElementById("right").ontouchstart = () => keys.right = true;
+document.getElementById("right").ontouchend = () => keys.right = false;
+document.getElementById("jump").ontouchstart = () => {
+  if (!player.jumping) {
+    player.velocityY = -18;
+    player.jumping = true;
+  }
+};
+
+function drawPlatforms() {
+  for (const p of platforms) {
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(p.x - cameraOffsetX, p.y, p.width, p.height);
+  }
+}
+function drawBoxes() {
+  for (const b of boxes) {
+    if (b.active) {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x - cameraOffsetX, b.y, 40, 40);
+    }
+  }
+}
+function drawEnemies() {
+  for (const e of enemies) {
+    ctx.beginPath();
+    ctx.fillStyle = "red";
+    ctx.arc(e.x - cameraOffsetX, e.y + 30, e.radius, 0, Math.PI * 2);
+    ctx.fill(); ctx.closePath();
+  }
+}
+function updateEnemies() {
+  for (const e of enemies) {
+    e.x -= e.speed;
+    if (e.x < -e.radius) e.x = canvas.width + 200;
+  }
+}
+function checkEnemyCollision() {
+  for (const e of enemies) {
+    if (
+      player.x < e.x + e.radius &&
+      player.x + player.width > e.x - e.radius &&
+      player.y < e.y + e.radius &&
+      player.y + player.height > e.y - e.radius
+    ) {
+      gameOver = true;
+      overlay.innerText = "Game Over";
+      overlay.style.display = "flex";
+      setTimeout(() => {
+        overlay.style.display = "none";
+        restartBtn.style.display = "block";
+      }, 2000);
+    }
+  }
+}
+function checkBoxCollisions() {
+  for (const b of boxes) {
+    if (
+      b.active &&
+      b.value === boxOrder[currentBoxIndex] &&
+      player.x < b.x + 40 &&
+      player.x + player.width > b.x &&
+      player.y < b.y + 40 &&
+      player.y + player.height > b.y &&
+      player.velocityY < 0
+    ) {
+      b.active = false;
+      boxesHit++;
+      currentBoxIndex++;
+      poppingNumbers.push({ x: b.x + 10, y: b.y, value: b.value, alpha: 1 });
+      if (boxesHit >= boxes.length && !gameOver) {
+        gameOver = true;
+        overlay.innerText = "Der Code ist 2-4-6-8";
+        overlay.style.display = "flex";
+        setTimeout(() => {
+          overlay.style.display = "none";
+          restartBtn.style.display = "block";
+        }, 10000);
+      }
+    }
+  }
+}
+function updatePoppingNumbers() {
+  for (const p of poppingNumbers) {
+    p.y -= 1;
+    p.alpha -= 0.02;
+  }
+  poppingNumbers = poppingNumbers.filter(p => p.alpha > 0);
+}
+function drawPoppingNumbers() {
+  ctx.font = "20px Arial";
+  for (const p of poppingNumbers) {
+    ctx.fillStyle = `rgba(0,0,0,${p.alpha})`;
+    ctx.fillText(p.value, p.x - cameraOffsetX, p.y);
+  }
+}
+
+function gameLoop() {
+  if (gameOver) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  updateCamera();
+  updateEnemies();
+  ctx.fillStyle = "green";
+  ctx.fillRect(0, ground + player.height, canvas.width, canvas.height - ground);
+  drawPlatforms();
+  drawBoxes();
+  drawEnemies();
+  drawPoppingNumbers();
+  if (keys.right) player.x += 5;
+  if (keys.left) player.x -= 5;
+  player.update();
+  checkBoxCollisions();
+  checkEnemyCollision();
+  updatePoppingNumbers();
+  player.draw();
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+
+restartBtn.onclick = () => {
+  boxes = generateBoxes();
+  platforms = generatePlatforms();
+  boxesHit = 0;
+  currentBoxIndex = 0;
+  overlay.style.display = "none";
+  overlay.innerText = "Der Code ist 2-4-6-8";
+  restartBtn.style.display = "none";
+  gameOver = false;
+  player.x = 100;
+  player.y = ground;
+  enemies[0].x = canvas.width;
+  enemies[1].x = canvas.width + 200;
+  gameLoop();
+};
 </script>
 </body>
 </html>
