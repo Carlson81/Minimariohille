@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Mini Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { margin: 0; overflow: hidden; touch-action: none; }
     canvas { display: block; background: lightblue; }
@@ -15,7 +15,6 @@
       width: 60px; height: 60px; border-radius: 50%;
       background: #444; color: white; font-size: 24px;
       display: flex; align-items: center; justify-content: center;
-      user-select: none;
     }
     .overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -42,11 +41,10 @@
 </div>
 <div id="overlay" class="overlay" style="display: none;">Das ist dein Code</div>
 <div id="restart" class="restart-button">Spiel neu starten</div>
+
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const overlay = document.getElementById("overlay");
-const restartBtn = document.getElementById("restart");
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -59,8 +57,8 @@ let gravity = 1;
 let ground = canvas.height - 80;
 let boxesHit = 0;
 let gameOver = false;
-let cameraOffsetX = 0;
 
+let cameraOffsetX = 0;
 function updateCamera() {
   cameraOffsetX = player.x - canvas.width / 2 + player.width / 2;
   if (cameraOffsetX < 0) cameraOffsetX = 0;
@@ -91,7 +89,10 @@ const player = {
   }
 };
 
-let boxOrder = [2, 4, 6, 8];
+const overlay = document.getElementById("overlay");
+const restartBtn = document.getElementById("restart");
+
+const boxOrder = [2, 4, 6, 8];
 let currentBoxIndex = 0;
 
 function shuffle(arr) {
@@ -117,13 +118,10 @@ let boxes = generateBoxes();
 function generatePlatforms() {
   const platforms = [];
   for (let i = 0; i < 9; i++) {
-    let y = i < 3
+    const y = i < 3
       ? ground - 50 - Math.random() * 40
       : ground - 100 - Math.random() * 250;
-    platforms.push({
-      x: 100 + Math.random() * 1200,
-      y, width: 60, height: 10
-    });
+    platforms.push({ x: 100 + Math.random() * 1200, y, width: 60, height: 10 });
   }
   return platforms;
 }
@@ -135,7 +133,7 @@ let enemies = [
 ];
 
 const poppingNumbers = [];
-const keys = { left: false, right: false, jump: false };
+const keys = { left: false, right: false };
 
 document.getElementById("left").ontouchstart = () => keys.left = true;
 document.getElementById("left").ontouchend = () => keys.left = false;
@@ -155,10 +153,10 @@ function drawPlatforms() {
   }
 }
 function drawBoxes() {
-  for (const box of boxes) {
-    if (box.active) {
-      ctx.fillStyle = box.color;
-      ctx.fillRect(box.x - cameraOffsetX, box.y, 40, 40);
+  for (const b of boxes) {
+    if (b.active) {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x - cameraOffsetX, b.y, 40, 40);
     }
   }
 }
@@ -195,22 +193,23 @@ function checkEnemyCollision() {
   }
 }
 function checkBoxCollisions() {
-  for (const box of boxes) {
+  for (const b of boxes) {
     if (
-      box.active &&
-      box.value === boxOrder[currentBoxIndex] &&
-      player.x < box.x + 40 &&
-      player.x + player.width > box.x &&
-      player.y < box.y + 40 &&
-      player.y + player.height > box.y &&
+      b.active &&
+      b.value === boxOrder[currentBoxIndex] &&
+      player.x < b.x + 40 &&
+      player.x + player.width > b.x &&
+      player.y < b.y + 40 &&
+      player.y + player.height > b.y &&
       player.velocityY < 0
     ) {
-      box.active = false;
+      b.active = false;
       boxesHit++;
       currentBoxIndex++;
-      poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
+      poppingNumbers.push({ x: b.x + 10, y: b.y, value: b.value, alpha: 1 });
       if (boxesHit >= boxes.length && !gameOver) {
         gameOver = true;
+        overlay.innerText = "Das ist dein Code";
         overlay.style.display = "flex";
         setTimeout(() => {
           overlay.style.display = "none";
@@ -221,17 +220,16 @@ function checkBoxCollisions() {
   }
 }
 function updatePoppingNumbers() {
-  for (const pop of poppingNumbers) {
-    pop.y -= 1;
-    pop.alpha -= 0.02;
+  for (const p of poppingNumbers) {
+    p.y -= 1;
+    p.alpha -= 0.02;
   }
-  poppingNumbers = poppingNumbers.filter(p => p.alpha > 0);
 }
 function drawPoppingNumbers() {
   ctx.font = "20px Arial";
-  for (const pop of poppingNumbers) {
-    ctx.fillStyle = `rgba(0,0,0,${pop.alpha})`;
-    ctx.fillText(pop.value, pop.x - cameraOffsetX, pop.y);
+  for (const p of poppingNumbers) {
+    ctx.fillStyle = `rgba(0,0,0,${p.alpha})`;
+    ctx.fillText(p.value, p.x - cameraOffsetX, p.y);
   }
 }
 
