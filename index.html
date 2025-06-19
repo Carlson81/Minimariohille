@@ -1,10 +1,269 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Mini Game</title>
+  <meta charset="UTF-8">
+  <title>Mini Mario Game Mobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; overflow: hidden; touch-action: none; }
+    canvas { display: block; background: lightblue; }
+    .controls {
+      position: absolute; bottom: 10px; left: 50%;
+      transform: translateX(-50%); display: flex; gap: 10px;
+    }
+    .btn {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: #444; color: white; font-size: 24px;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none;
+    }
+    .overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: bold; color: red;
+      background: rgba(255,255,255,0.5);
+      animation: blink 1s step-end infinite; z-index: 2;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .restart-button {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, 50px);
+      background: #333; color: white; padding: 12px 24px;
+      border-radius: 8px; font-size: 20px; display: none; z-index: 3;
+    }
+  </style>
 </head>
 <body>
-<p>Die vollständige index.html wurde angepasst und wird hier zum Download bereitgestellt.</p>
+<canvas id="gameCanvas"></canvas>
+<div class="controls">
+  <div class="btn" id="left">◀</div>
+  <div class="btn" id="jump">⬆</div>
+  <div class="btn" id="right">▶</div>
+</div>
+<div id="overlay" class="overlay" style="display: none;">Das ist dein Code</div>
+<div id="restart" class="restart-button">Spiel neu starten</div>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const restartBtn = document.getElementById('restart');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let gravity = 1;
+let ground = canvas.height - 80;
+let boxesHit = 0;
+let gameOver = false;
+
+const player = {
+  x: 100, y: ground, width: 40, height: 50, velocityY: 0, jumping: false,
+  draw() {
+    ctx.fillStyle = 'blue';
+    ctx.fillRect(this.x - cameraOffsetX, this.y, this.width, this.height);
+  },
+  update() {
+    this.velocityY += gravity;
+    this.y += this.velocityY;
+    for (const p of platforms) {
+      if (this.x + this.width > p.x && this.x < p.x + p.width &&
+          this.y + this.height >= p.y && this.y + this.height <= p.y + this.velocityY + 5) {
+        this.y = p.y - this.height;
+        this.velocityY = 0;
+        this.jumping = false;
+      }
+    }
+    if (this.y >= ground) {
+      this.y = ground;
+      this.velocityY = 0;
+      this.jumping = false;
+    }
+  }
+};
+
+const enemy = {
+  x: canvas.width, y: ground, radius: 20, speed: 2,
+  draw() {
+    ctx.beginPath();
+    ctx.fillStyle = 'red';
+    ctx.arc(this.x - cameraOffsetX, this.y + 30, this.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+  },
+  update() {
+    this.x -= this.speed;
+    if (this.x < -this.radius) this.x = canvas.width + this.radius;
+  }
+};
+
+const platforms = [
+  { x: 80, y: ground - 100, width: 60, height: 10 },
+  { x: 160, y: ground - 150, width: 60, height: 10 },
+  { x: 240, y: ground - 200, width: 60, height: 10 },
+  { x: 320, y: ground - 250, width: 60, height: 10 },
+];
+
+let colors = ['yellow', 'green', 'orange', 'pink'];
+let values = [2, 4, 6, 8];
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function generateBoxes() {
+  const shuffledColors = shuffle([...colors]);
+  const shuffledValues = [2, 4, 6, 8]; // in richtiger Reihenfolge
+  const boxPositions = [];
+  for (let i = 0; i < 4; i++) {
+    boxPositions.push({
+      x: 200 + i * 300,
+      y: ground - 150 - Math.random() * 100,
+      color: shuffledColors[i],
+      value: shuffledValues[i],
+      active: true
+    });
+  }
+  return boxPositions;
+}
+
+let boxes = generateBoxes();
+let boxOrder = [2, 4, 6, 8];
+let currentBoxIndex = 0;
+let cameraOffsetX = 0;
+
+const poppingNumbers = [];
+const keys = { left: false, right: false, jump: false };
+
+document.getElementById('left').ontouchstart = () => keys.left = true;
+document.getElementById('left').ontouchend = () => keys.left = false;
+document.getElementById('right').ontouchstart = () => keys.right = true;
+document.getElementById('right').ontouchend = () => keys.right = false;
+document.getElementById('jump').ontouchstart = () => {
+  if (!player.jumping) {
+    player.velocityY = -18;
+    player.jumping = true;
+  }
+};
+
+restartBtn.onclick = () => {
+  boxes = generateBoxes();
+  boxesHit = 0;
+  currentBoxIndex = 0;
+  overlay.style.display = 'none';
+  overlay.innerText = 'Das ist dein Code';
+  restartBtn.style.display = 'none';
+  gameOver = false;
+  player.x = 100;
+  player.y = ground;
+  enemy.x = canvas.width;
+  gameLoop();
+};
+
+function updateCamera() {
+  cameraOffsetX = player.x - canvas.width / 2 + player.width / 2;
+  if (cameraOffsetX < 0) cameraOffsetX = 0;
+}
+
+function drawPlatforms() {
+  for (const p of platforms) {
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(p.x - cameraOffsetX, p.y, p.width, p.height);
+  }
+}
+function drawBoxes() {
+  for (const box of boxes) {
+    if (box.active) {
+      ctx.fillStyle = box.color;
+      ctx.fillRect(box.x - cameraOffsetX, box.y, 40, 40);
+    }
+  }
+}
+function checkBoxCollisions() {
+  for (const box of boxes) {
+    if (
+      box.active &&
+      box.value === boxOrder[currentBoxIndex] &&
+      player.x < box.x + 40 &&
+      player.x + player.width > box.x &&
+      player.y < box.y + 40 &&
+      player.y + player.height > box.y &&
+      player.velocityY < 0
+    ) {
+      box.active = false;
+      boxesHit++;
+      currentBoxIndex++;
+      poppingNumbers.push({ x: box.x + 10, y: box.y, value: box.value, alpha: 1 });
+      if (boxesHit >= boxes.length && !gameOver) {
+        gameOver = true;
+        overlay.style.display = 'flex';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          restartBtn.style.display = 'block';
+        }, 10000);
+      }
+    }
+  }
+}
+function checkEnemyCollision() {
+  if (player.x < enemy.x + enemy.radius &&
+      player.x + player.width > enemy.x - enemy.radius &&
+      player.y < enemy.y + enemy.radius &&
+      player.y + player.height > enemy.y - enemy.radius) {
+    gameOver = true;
+    overlay.innerText = 'Game Over';
+    overlay.style.display = 'flex';
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      restartBtn.style.display = 'block';
+    }, 2000);
+  }
+}
+function updatePoppingNumbers() {
+  for (const pop of poppingNumbers) {
+    pop.y -= 1;
+    pop.alpha -= 0.02;
+  }
+  for (let i = poppingNumbers.length - 1; i >= 0; i--) {
+    if (poppingNumbers[i].alpha <= 0) {
+      poppingNumbers.splice(i, 1);
+    }
+  }
+}
+function drawPoppingNumbers() {
+  ctx.font = '20px Arial';
+  for (const pop of poppingNumbers) {
+    ctx.fillStyle = `rgba(0, 0, 0, ${pop.alpha})`;
+    ctx.fillText(pop.value, pop.x - cameraOffsetX, pop.y);
+  }
+}
+function gameLoop() {
+  if (gameOver) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  updateCamera();
+  ctx.fillStyle = 'green';
+  ctx.fillRect(0, ground + player.height, canvas.width, canvas.height - ground);
+  drawPlatforms();
+  drawBoxes();
+  drawPoppingNumbers();
+  enemy.update(); enemy.draw();
+  if (keys.right) player.x += 5;
+  if (keys.left) player.x -= 5;
+  player.update();
+  checkBoxCollisions();
+  checkEnemyCollision();
+  updatePoppingNumbers();
+  player.draw();
+  requestAnimationFrame(gameLoop);
+}
+gameLoop();
+</script>
 </body>
 </html>
